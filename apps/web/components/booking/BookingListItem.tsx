@@ -60,7 +60,6 @@ import {
   isActionDisabled,
 } from "./actions/bookingActions";
 import type { BookingItemProps } from "./types";
-import RescheduleRequestCard from "@calcom/web/components/booking/RescheduleRequestCard";
 
 type ParsedBooking = ReturnType<typeof buildParsedBooking>;
 type TeamEvent = Ensure<NonNullable<ParsedBooking["eventType"]>, "team">;
@@ -562,22 +561,6 @@ function BookingListItem(booking: BookingItemProps) {
           setIsOpenDialog={setIsOpenWrongAssignmentDialog}
           booking={booking}
         />
-      )}
-      {booking.pendingRescheduleRequest && (
-        <div className="border-subtle border-t px-4 py-3">
-          <RescheduleRequestCard
-            rescheduleRequestId={booking.pendingRescheduleRequest.id}
-            guestName={booking.pendingRescheduleRequest.guestName}
-            originalTime={booking.startTime.toISOString()}
-            reason={booking.pendingRescheduleRequest.reason ?? undefined}
-            proposedTimes={
-              booking.pendingRescheduleRequest.proposedStartTime
-                ? [booking.pendingRescheduleRequest.proposedStartTime.toISOString()]
-                : undefined
-            }
-            onResponded={() => window.location.reload()}
-          />
-        </div>
       )}
     </div>
   );

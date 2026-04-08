@@ -218,7 +218,7 @@ export default function Login({
                 <div className="flex flex-col gap-2">
                   {isGoogleLoginEnabled && (
                     <Button
-                      className="w-full py-1"
+                      className="w-full"
                       disabled={formState.isSubmitting}
                       data-testid="google"
                       onClick={async (e) => {
@@ -236,7 +236,7 @@ export default function Login({
                   {isOutlookLoginEnabled && (
                     <Button
                       variant="outline"
-                      className="w-full py-1"
+                      className="w-full"
                       data-testid="microsoft"
                       onClick={async (e) => {
                         e.preventDefault();

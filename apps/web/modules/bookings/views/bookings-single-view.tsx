@@ -64,7 +64,6 @@ import {
 import { showToast } from "@calcom/ui/components/toast";
 import { useCalcomTheme } from "@calcom/ui/styles";
 import CancelBooking from "@calcom/web/components/booking/CancelBooking";
-import RescheduleRequestModal from "@calcom/web/components/booking/RescheduleRequestModal";
 import { RoutingTraceSheet } from "@calcom/web/components/booking/RoutingTraceSheet";
 import EventReservationSchema from "@calcom/web/components/schemas/EventReservationSchema";
 import { timeZone } from "@calcom/web/lib/clock";
@@ -243,8 +242,6 @@ export default function Success(props: PageProps) {
   const sendFeedback = async (rating: string, comment: string) => {
     mutation.mutate({ bookingUid: bookingInfo.uid, rating: rateValue, comment: comment });
   };
-
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
   function setIsCancellationMode(value: boolean) {
     const _searchParams = new URLSearchParams(searchParams?.toString() ?? undefined);
@@ -924,21 +921,6 @@ export default function Success(props: PageProps) {
                                       {t("cancel")}
                                     </button>
                                   )}
-
-                                  {!isBookingInPast &&
-                                    !isCancelled &&
-                                    !eventType.disableRescheduling &&
-                                    searchParams?.get("token") && (
-                                      <>
-                                        <span className="mx-2">{t("or_lowercase")}</span>
-                                        <button
-                                          data-testid="request-reschedule"
-                                          className="text-default underline"
-                                          onClick={() => setIsRescheduleModalOpen(true)}>
-                                          {t("request_reschedule")}
-                                        </button>
-                                      </>
-                                    )}
                                 </>
                               </div>
                             </>
@@ -1183,12 +1165,6 @@ export default function Success(props: PageProps) {
           </div>
         </div>
       </main>
-      <RescheduleRequestModal
-        isOpen={isRescheduleModalOpen}
-        onClose={() => setIsRescheduleModalOpen(false)}
-        bookingId={bookingInfo?.id ?? 0}
-        oneTimePassword={searchParams?.get("token") ?? ""}
-      />
       <Toaster position="bottom-right" />
     </div>
   );

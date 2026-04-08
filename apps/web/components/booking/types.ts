@@ -6,14 +6,6 @@ export type BookingListingStatus = NonNullable<
 
 type BookingItem = RouterOutputs["viewer"]["bookings"]["get"]["bookings"][number];
 
-export type PendingRescheduleRequest = {
-  id: string;
-  reason?: string | null;
-  proposedStartTime?: Date | null;
-  proposedEndTime?: Date | null;
-  guestName: string;
-};
-
 export type BookingItemProps = BookingItem & {
   listingStatus: BookingListingStatus;
   recurringInfo: RouterOutputs["viewer"]["bookings"]["get"]["recurringInfo"][number] | undefined;
@@ -25,5 +17,4 @@ export type BookingItemProps = BookingItem & {
   };
   isToday: boolean;
   onClick?: () => void;
-  pendingRescheduleRequest?: PendingRescheduleRequest;
 };

@@ -3,9 +3,6 @@ import { ErrorCode } from "@calcom/lib/errorCodes";
 import { validateHashedLinkData } from "@calcom/lib/hashedLinksUtils";
 import logger from "@calcom/lib/logger";
 import { safeStringify } from "@calcom/lib/safeStringify";
-import { prisma } from "@calcom/prisma";
-
-import { TRPCError } from "@trpc/server";
 
 import { HashedLinkRepository } from "../repository/HashedLinkRepository";
 import { type HashedLinkInputType } from "../repository/HashedLinkRepository";
@@ -188,45 +185,5 @@ export class HashedLinkService {
 
     const membership = await this.membershipService.checkMembership(link.eventType.teamId, userId);
     return membership.isMember;
-  }
-
-  /**
-   * Validates a booking request link token and increments its usage count.
-   * @param token - The hashed link token to validate
-   * @returns The bookingRequestId derived from the link's eventTypeId
-   * @throws TRPCError if the link is invalid, expired, or already used
-   */
-  async validateAndConsumeBookingRequestLink(token: string): Promise<{ bookingRequestId: string }> {
-    const hashedLink = await prisma.hashedLink.findFirst({
-      where: { link: token, type: "BOOKING_REQUEST" },
-    });
-
-    if (!hashedLink) {
-      throw new TRPCError({
-        code: "NOT_FOUND",
-        message: "Invalid or expired booking request link",
-      });
-    }
-
-    if (hashedLink.expiresAt && hashedLink.expiresAt < new Date()) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "Booking request link has expired",
-      });
-    }
-
-    if (hashedLink.maxUsageCount && hashedLink.usageCount >= hashedLink.maxUsageCount) {
-      throw new TRPCError({
-        code: "BAD_REQUEST",
-        message: "Booking request link has already been used",
-      });
-    }
-
-    await prisma.hashedLink.update({
-      where: { id: hashedLink.id },
-      data: { usageCount: { increment: 1 } },
-    });
-
-    return { bookingRequestId: String(hashedLink.eventTypeId ?? "") };
   }
 }
