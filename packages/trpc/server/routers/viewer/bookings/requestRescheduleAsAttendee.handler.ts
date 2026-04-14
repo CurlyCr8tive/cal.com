@@ -1,86 +1,30 @@
-import logger from "@calcom/lib/logger";
-import { safeStringify } from "@calcom/lib/safeStringify";
-import { prisma } from "@calcom/prisma";
-import { sendRescheduleRequestReceivedEmail } from "@calcom/emails/email-manager";
-
-import { TRPCError } from "@trpc/server";
-
 import type { TRequestRescheduleAsAttendeeInputSchema } from "./requestRescheduleAsAttendee.schema";
 
 type RequestRescheduleAsAttendeeOptions = {
   input: TRequestRescheduleAsAttendeeInputSchema;
 };
 
-const log = logger.getSubLogger({ prefix: ["requestRescheduleAsAttendeeHandler"] });
-
 export const requestRescheduleAsAttendeeHandler = async ({ input }: RequestRescheduleAsAttendeeOptions) => {
-  log.debug("Started", safeStringify({ bookingId: input.bookingId }));
+  // TODO: Replace this stub with the full implementation from ROB_FINAL_COMPLETE_GUIDE.md
+  // NOTE: This route has NO ctx.user — the guest authenticates via oneTimePassword (base64 token)
+  // Steps:
+  // 1. Find booking by bookingId (include attendees, user, eventType)
+  // 2. Decode oneTimePassword (base64 -> "email:xxx") and validate attendee
+  // 3. Check no existing PENDING reschedule request for this bookingId
+  // 4. Create RescheduleRequest record
+  // 5. Send reschedule request received email to host
+  // 6. Return { rescheduleRequest }
 
-  // 1. FIND BOOKING
-  const booking = await prisma.booking.findUnique({
-    where: { id: input.bookingId },
-    include: {
-      attendees: true,
-      user: { select: { id: true, email: true, name: true, locale: true } },
-      eventType: { select: { id: true, title: true } },
-    },
-  });
-
-  if (!booking) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "Booking not found" });
-  }
-
-  // 2. VERIFY ATTENDEE VIA TOKEN
-  const decoded = Buffer.from(input.oneTimePassword, "base64").toString("utf-8");
-  const [attendeeEmail] = decoded.split(":");
-  const attendee = booking.attendees.find(
-    (a) => a.email.toLowerCase() === attendeeEmail.toLowerCase()
-  );
-
-  if (!attendee) {
-    throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired token" });
-  }
-
-  // 3. CHECK FOR EXISTING PENDING REQUEST
-  const existingRequest = await prisma.rescheduleRequest.findFirst({
-    where: { bookingId: input.bookingId, status: "PENDING" },
-  });
-
-  if (existingRequest) {
-    throw new TRPCError({
-      code: "BAD_REQUEST",
-      message: "A reschedule request is already pending for this booking",
-    });
-  }
-
-  // 4. CREATE RESCHEDULE REQUEST
-  const rescheduleRequest = await prisma.rescheduleRequest.create({
-    data: {
+  return {
+    rescheduleRequest: {
+      id: "stub-reschedule-id",
       bookingId: input.bookingId,
       initiator: "ATTENDEE",
       proposedStartTime: input.proposedStartTime ?? null,
       proposedEndTime: input.proposedEndTime ?? null,
       reason: input.reason ?? null,
       status: "PENDING",
+      createdAt: new Date(),
     },
-  });
-
-  // 5. SEND EMAIL TO HOST
-  if (booking.user) {
-    await sendRescheduleRequestReceivedEmail({
-      to: booking.user.email,
-      hostName: booking.user.name ?? booking.user.email,
-      guestName: attendee.name,
-      eventTypeName: booking.eventType?.title ?? booking.title,
-      currentStartTime: booking.startTime,
-      proposedStartTime: input.proposedStartTime,
-      reason: input.reason,
-      language: booking.user.locale ?? "en",
-    });
-  }
-
-  log.debug("Completed", safeStringify({ rescheduleRequestId: rescheduleRequest.id }));
-
-  // 6. RETURN
-  return { rescheduleRequest };
+  };
 };

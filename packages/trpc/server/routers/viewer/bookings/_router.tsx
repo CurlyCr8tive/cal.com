@@ -22,6 +22,12 @@ import { ZReportWrongAssignmentInputSchema } from "./reportWrongAssignment.schem
 import { ZRequestRescheduleInputSchema } from "./requestReschedule.schema";
 import { ZUpdateWrongAssignmentReportStatusInputSchema } from "./updateWrongAssignmentReportStatus.schema";
 import { bookingsProcedure } from "./util";
+// CPR: Booking Request & Reschedule Request routes
+import { ZCreateBookingRequestInputSchema } from "./createBookingRequest.schema";
+import { ZListBookingRequestsInputSchema } from "./listBookingRequests.schema";
+import { ZCancelBookingRequestInputSchema } from "./cancelBookingRequest.schema";
+import { ZRequestRescheduleAsAttendeeInputSchema } from "./requestRescheduleAsAttendee.schema";
+import { ZRespondToRescheduleRequestInputSchema } from "./respondToRescheduleRequest.schema";
 export const bookingsRouter = router({
   get: authedProcedure.input(ZGetInputSchema).query(async ({ input, ctx }) => {
     const { getHandler } = await import("./get.handler");
@@ -189,5 +195,44 @@ export const bookingsRouter = router({
         ctx,
         input,
       });
+    }),
+
+  // ─── CPR: Booking Request Routes ────────────────────────────────────────────
+
+  createBookingRequest: authedProcedure
+    .input(ZCreateBookingRequestInputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { createBookingRequestHandler } = await import("./createBookingRequest.handler");
+      return createBookingRequestHandler({ ctx, input });
+    }),
+
+  listBookingRequests: authedProcedure
+    .input(ZListBookingRequestsInputSchema)
+    .query(async ({ input, ctx }) => {
+      const { listBookingRequestsHandler } = await import("./listBookingRequests.handler");
+      return listBookingRequestsHandler({ ctx, input });
+    }),
+
+  cancelBookingRequest: authedProcedure
+    .input(ZCancelBookingRequestInputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { cancelBookingRequestHandler } = await import("./cancelBookingRequest.handler");
+      return cancelBookingRequestHandler({ ctx, input });
+    }),
+
+  // ─── CPR: Reschedule Request Routes ─────────────────────────────────────────
+
+  requestRescheduleAsAttendee: publicProcedure
+    .input(ZRequestRescheduleAsAttendeeInputSchema)
+    .mutation(async ({ input }) => {
+      const { requestRescheduleAsAttendeeHandler } = await import("./requestRescheduleAsAttendee.handler");
+      return requestRescheduleAsAttendeeHandler({ input });
+    }),
+
+  respondToRescheduleRequest: authedProcedure
+    .input(ZRespondToRescheduleRequestInputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { respondToRescheduleRequestHandler } = await import("./respondToRescheduleRequest.handler");
+      return respondToRescheduleRequestHandler({ ctx, input });
     }),
 });
