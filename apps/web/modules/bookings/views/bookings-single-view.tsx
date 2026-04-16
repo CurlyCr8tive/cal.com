@@ -1183,6 +1183,12 @@ export default function Success(props: PageProps) {
           </div>
         </div>
       </main>
+      <RescheduleRequestModal
+        isOpen={isRescheduleModalOpen}
+        onClose={() => setIsRescheduleModalOpen(false)}
+        bookingId={String(bookingInfo?.id ?? "")}
+        oneTimePassword={searchParams?.get("token") ?? ""}
+      />
       <Toaster position="bottom-right" />
     </div>
   );

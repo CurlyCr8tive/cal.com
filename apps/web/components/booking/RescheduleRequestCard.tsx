@@ -1,12 +1,12 @@
 "use client";
 
 import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { showToast } from "@calcom/ui/components/toast";
-import { useState } from "react";
 
 type Props = {
-  rescheduleRequestUid: string;
+  rescheduleRequestId: string;
   guestName: string;
   originalTime: string;
   reason?: string;
@@ -15,7 +15,7 @@ type Props = {
 };
 
 export default function RescheduleRequestCard({
-  rescheduleRequestUid,
+  rescheduleRequestId,
   guestName,
   originalTime,
   reason,
@@ -23,22 +23,27 @@ export default function RescheduleRequestCard({
   onResponded,
 }: Props) {
   const { t } = useLocale();
-  const [loading, setLoading] = useState<"ACCEPT" | "DECLINE" | null>(null);
 
-  const handleAction = async (action: "ACCEPT" | "DECLINE") => {
-    try {
-      setLoading(action);
-      // TODO: wire to trpc.viewer.bookings.respondToRescheduleRequest once Person 1 registers the route
+  const mutation = trpc.viewer.bookings.respondToRescheduleRequest.useMutation({
+    onSuccess: (_, variables) => {
       showToast(
-        action === "ACCEPT" ? t("reschedule_request_accepted") : t("reschedule_request_declined"),
+        variables.response === "ACCEPTED"
+          ? t("reschedule_request_accepted")
+          : t("reschedule_request_declined"),
         "success"
       );
       onResponded();
-    } catch (e) {
-      showToast(t("reschedule_request_error"), "error");
-    } finally {
-      setLoading(null);
-    }
+    },
+    onError: (err) => {
+      showToast(err.message || t("reschedule_request_error"), "error");
+    },
+  });
+
+  const handleAction = (action: "ACCEPTED" | "DECLINED") => {
+    mutation.mutate({
+      rescheduleRequestId,
+      response: action,
+    });
   };
 
   return (
@@ -69,16 +74,16 @@ export default function RescheduleRequestCard({
       <div className="flex gap-2">
         <Button
           color="primary"
-          loading={loading === "ACCEPT"}
-          disabled={!!loading}
-          onClick={() => handleAction("ACCEPT")}>
+          loading={mutation.isPending && mutation.variables?.response === "ACCEPTED"}
+          disabled={mutation.isPending}
+          onClick={() => handleAction("ACCEPTED")}>
           {t("accept")}
         </Button>
         <Button
           color="secondary"
-          loading={loading === "DECLINE"}
-          disabled={!!loading}
-          onClick={() => handleAction("DECLINE")}>
+          loading={mutation.isPending && mutation.variables?.response === "DECLINED"}
+          disabled={mutation.isPending}
+          onClick={() => handleAction("DECLINED")}>
           {t("decline")}
         </Button>
       </div>
