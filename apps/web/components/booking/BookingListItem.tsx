@@ -46,6 +46,7 @@ import { useBookingDetailsSheetStore } from "../../modules/bookings/store/bookin
 import type { BookingAttendee } from "../../modules/bookings/types";
 import { AcceptBookingButton } from "./AcceptBookingButton";
 import { RejectBookingButton } from "./RejectBookingButton";
+import RescheduleRequestCard from "./RescheduleRequestCard";
 import { BookingActionsDropdown } from "./actions/BookingActionsDropdown";
 import {
   useBookingActionsStoreContext,
@@ -561,6 +562,22 @@ function BookingListItem(booking: BookingItemProps) {
           setIsOpenDialog={setIsOpenWrongAssignmentDialog}
           booking={booking}
         />
+      )}
+      {booking.pendingRescheduleRequest && (
+        <div className="border-subtle border-t px-4 py-3">
+          <RescheduleRequestCard
+            rescheduleRequestId={booking.pendingRescheduleRequest.id}
+            guestName={booking.pendingRescheduleRequest.guestName}
+            originalTime={booking.startTime.toISOString()}
+            reason={booking.pendingRescheduleRequest.reason ?? undefined}
+            proposedTimes={
+              booking.pendingRescheduleRequest.proposedStartTime
+                ? [booking.pendingRescheduleRequest.proposedStartTime.toISOString()]
+                : undefined
+            }
+            onResponded={() => window.location.reload()}
+          />
+        </div>
       )}
     </div>
   );

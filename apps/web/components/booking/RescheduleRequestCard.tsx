@@ -1,5 +1,6 @@
 "use client";
 
+import dayjs from "@calcom/dayjs";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
@@ -25,68 +26,52 @@ export default function RescheduleRequestCard({
   const { t } = useLocale();
 
   const mutation = trpc.viewer.bookings.respondToRescheduleRequest.useMutation({
-    onSuccess: (_, variables) => {
-      showToast(
-        variables.response === "ACCEPTED"
-          ? t("reschedule_request_accepted")
-          : t("reschedule_request_declined"),
-        "success"
-      );
+    onSuccess: () => {
+      showToast(t("reschedule_request_responded"), "success");
       onResponded();
     },
     onError: (err) => {
-      showToast(err.message || t("reschedule_request_error"), "error");
+      showToast(err.message || t("error_updating_event"), "error");
     },
   });
 
-  const handleAction = (action: "ACCEPTED" | "DECLINED") => {
-    mutation.mutate({
-      rescheduleRequestId,
-      response: action,
-    });
+  const respond = (response: "ACCEPTED" | "DECLINED") => {
+    mutation.mutate({ rescheduleRequestId, response });
   };
 
+  const isAccepting = mutation.isPending && mutation.variables?.response === "ACCEPTED";
+  const isDeclining = mutation.isPending && mutation.variables?.response === "DECLINED";
+
   return (
-    <div className="border-subtle bg-default rounded-md border p-4">
-      <div className="mb-3">
-        <p className="text-emphasis font-semibold">{t("reschedule_request_from", { name: guestName })}</p>
-        <p className="text-subtle text-sm">{t("original_time", { time: originalTime })}</p>
-      </div>
-
+    <div className="bg-muted rounded-md p-3 text-sm">
+      <p className="text-emphasis font-medium">
+        {t("reschedule_request_from", { name: guestName })}
+      </p>
       {reason && (
-        <div className="mb-3">
-          <p className="text-default text-sm font-medium">{t("reason")}</p>
-          <p className="text-subtle text-sm">{reason}</p>
-        </div>
+        <p className="text-subtle mt-1">{reason}</p>
       )}
-
       {proposedTimes && proposedTimes.length > 0 && (
-        <div className="mb-3">
-          <p className="text-default text-sm font-medium">{t("proposed_times")}</p>
-          <ul className="text-subtle list-disc pl-4 text-sm">
-            {proposedTimes.map((time, i) => (
-              <li key={i}>{time}</li>
-            ))}
-          </ul>
-        </div>
+        <p className="text-subtle mt-1">
+          {t("proposed_time")}: {dayjs(proposedTimes[0]).format("LLL")}
+        </p>
       )}
-
-      <div className="flex gap-2">
+      <div className="mt-3 flex gap-2">
         <Button
-          data-testid={`reschedule-request-accept-${rescheduleRequestId}`}
-          color="primary"
-          loading={mutation.isPending && mutation.variables?.response === "ACCEPTED"}
+          size="sm"
+          color="secondary"
+          loading={isDeclining}
           disabled={mutation.isPending}
-          onClick={() => handleAction("ACCEPTED")}>
-          {t("accept")}
+          data-testid={`reschedule-request-decline-${rescheduleRequestId}`}
+          onClick={() => respond("DECLINED")}>
+          {t("decline")}
         </Button>
         <Button
-          data-testid={`reschedule-request-decline-${rescheduleRequestId}`}
-          color="secondary"
-          loading={mutation.isPending && mutation.variables?.response === "DECLINED"}
+          size="sm"
+          loading={isAccepting}
           disabled={mutation.isPending}
-          onClick={() => handleAction("DECLINED")}>
-          {t("decline")}
+          data-testid={`reschedule-request-accept-${rescheduleRequestId}`}
+          onClick={() => respond("ACCEPTED")}>
+          {t("accept")}
         </Button>
       </div>
     </div>

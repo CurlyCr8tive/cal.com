@@ -50,6 +50,7 @@ import {
   type ProfileOption,
 } from "@calcom/web/modules/event-types/components/CreateEventTypeDialog";
 import { DuplicateDialog } from "@calcom/web/modules/event-types/components/DuplicateDialog";
+import RequestBookingModal from "@calcom/web/components/booking/RequestBookingModal";
 import { InfiniteSkeletonLoader } from "@calcom/web/modules/event-types/components/SkeletonLoader";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { TRPCClientError } from "@trpc/client";
@@ -302,6 +303,8 @@ export const InfiniteEventTypeList = ({
     null
   );
   const [privateLinkCopyIndices, setPrivateLinkCopyIndices] = useState<Record<string, number>>({});
+  const [isRequestBookingModalOpen, setIsRequestBookingModalOpen] = useState(false);
+  const [requestBookingEventTypeId, setRequestBookingEventTypeId] = useState(0);
 
   const utils = trpc.useUtils();
   const mutation = trpc.viewer.loggedInViewerRouter.eventTypeOrder.useMutation({
@@ -721,6 +724,20 @@ export const InfiniteEventTypeList = ({
                                     </EventTypeEmbedButton>
                                   </DropdownMenuItem>
                                 )}
+                                {!readOnly && (
+                                  <DropdownMenuItem className="outline-none">
+                                    <DropdownItem
+                                      type="button"
+                                      data-testid={`request-booking-btn-${type.id}`}
+                                      StartIcon="send"
+                                      onClick={() => {
+                                        setRequestBookingEventTypeId(type.id);
+                                        setIsRequestBookingModalOpen(true);
+                                      }}>
+                                      {t("send_booking_request")}
+                                    </DropdownItem>
+                                  </DropdownMenuItem>
+                                )}
                                 {/* readonly is only set when we are on a team - if we are on a user event type null will be the value. */}
                                 {!readOnly && !isChildrenManagedEventType && (
                                   <>
@@ -895,6 +912,12 @@ export const InfiniteEventTypeList = ({
           </p>
         </ConfirmationDialogContent>
       </Dialog>
+
+      <RequestBookingModal
+        isOpen={isRequestBookingModalOpen}
+        onClose={() => setIsRequestBookingModalOpen(false)}
+        eventTypeId={requestBookingEventTypeId}
+      />
     </div>
   );
 };
