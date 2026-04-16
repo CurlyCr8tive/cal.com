@@ -43,7 +43,7 @@ test.describe("Booking Request & Mutual Rescheduling", () => {
 
     // The RequestBookingModal is opened from somewhere on the event-types page or bookings page.
     // We trigger it via the data-testid we set on the button.
-    await page.locator('[data-testid="request-booking-btn"]').first().click();
+    await page.locator('[data-testid^="request-booking-btn"]').first().click();
     await expect(page.locator('[role="dialog"]')).toBeVisible();
 
     // ── 3. Fill and submit the booking request form ──────────────────────────
@@ -71,12 +71,12 @@ test.describe("Booking Request & Mutual Rescheduling", () => {
     const bookingRequest = await prisma.bookingRequest.findFirst({
       where: {
         eventTypeId: eventType.id,
-        email: guestEmail,
+        guestEmail,
       },
     });
 
     expect(bookingRequest).not.toBeNull();
-    expect(bookingRequest?.name).toBe(guestName);
+    expect(bookingRequest?.guestName).toBe(guestName);
     expect(bookingRequest?.status).toBe("PENDING");
 
     // ── 5. Simulate a booking existing for the guest (as if they accepted) ───
