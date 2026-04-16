@@ -15,8 +15,8 @@ type Props = {
 };
 
 type FormValues = {
-  recipientEmail: string;
-  recipientName: string;
+  email: string;
+  name: string;
   startTime: string;
   endTime: string;
   notes: string;
@@ -40,8 +40,8 @@ export default function RequestBookingModal({ isOpen, onClose, eventTypeId }: Pr
   const onSubmit = (data: FormValues) => {
     mutation.mutate({
       eventTypeId,
-      recipientEmail: data.recipientEmail,
-      recipientName: data.recipientName,
+      email: data.email,
+      name: data.name,
       startTime: new Date(data.startTime),
       endTime: new Date(data.endTime),
       notes: data.notes || undefined,
@@ -60,12 +60,12 @@ export default function RequestBookingModal({ isOpen, onClose, eventTypeId }: Pr
           <TextField
             label={t("email")}
             type="email"
-            {...register("recipientEmail", { required: true })}
+            {...register("email", { required: true })}
             placeholder="guest@example.com"
           />
           <TextField
             label={t("name")}
-            {...register("recipientName", { required: true })}
+            {...register("name", { required: true })}
             placeholder={t("your_name")}
           />
           <TextField

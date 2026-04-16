@@ -52,6 +52,10 @@ import RescheduleRequestAcceptedEmail from "./templates/reschedule-request-accep
 import type { RescheduleRequestAcceptedEmailProps } from "./templates/reschedule-request-accepted-email";
 import RescheduleRequestDeclinedEmail from "./templates/reschedule-request-declined-email";
 import type { RescheduleRequestDeclinedEmailProps } from "./templates/reschedule-request-declined-email";
+import BookingRequestExpiredEmail from "./templates/booking-request-expired-email";
+import type { BookingRequestExpiredEmailProps } from "./templates/booking-request-expired-email";
+import RescheduleCounterProposalEmail from "./templates/reschedule-counter-proposal-email";
+import type { RescheduleCounterProposalEmailProps } from "./templates/reschedule-counter-proposal-email";
 
 type EventTypeMetadata = z.infer<typeof EventTypeMetaDataSchema>;
 
@@ -838,3 +842,9 @@ export const sendRescheduleRequestAcceptedEmail = (props: RescheduleRequestAccep
 
 export const sendRescheduleRequestDeclinedEmail = (props: RescheduleRequestDeclinedEmailProps) =>
   sendEmail(() => new RescheduleRequestDeclinedEmail(props));
+
+export const sendBookingRequestExpiredEmail = (props: BookingRequestExpiredEmailProps) =>
+  sendEmail(() => new BookingRequestExpiredEmail(props));
+
+export const sendRescheduleCounterProposalEmail = (props: RescheduleCounterProposalEmailProps) =>
+  sendEmail(() => new RescheduleCounterProposalEmail(props));
