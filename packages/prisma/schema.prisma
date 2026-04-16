@@ -281,9 +281,9 @@ model EventType {
   secondaryEmailId Int?
   secondaryEmail   SecondaryEmail? @relation(fields: [secondaryEmailId], references: [id], onDelete: Cascade)
 
-  useBookerTimezone     Boolean     @default(false)
+  useBookerTimezone     Boolean          @default(false)
   restrictionScheduleId Int?
-  restrictionSchedule   Schedule?   @relation("restrictionSchedule", fields: [restrictionScheduleId], references: [id])
+  restrictionSchedule   Schedule?        @relation("restrictionSchedule", fields: [restrictionScheduleId], references: [id])
   hostGroups            HostGroup[]
   bookingRequests       BookingRequest[]
 
@@ -521,7 +521,7 @@ model User {
   agents                         Agent[]
   oAuthClients                   OAuthClient[]
   holidaySettings                UserHolidaySettings?
-  bookingRequests                BookingRequest[]      @relation("HostBookingRequests")
+  bookingRequests                BookingRequest[]              @relation("HostBookingRequests")
 
   autoOptInFeatures Boolean @default(false)
 
@@ -1248,14 +1248,14 @@ model RateLimit {
 }
 
 model HashedLink {
-  id            Int             @id @default(autoincrement())
-  link          String          @unique
+  id            Int            @id @default(autoincrement())
+  link          String         @unique
   eventTypeId   Int
-  eventType     EventType       @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  eventType     EventType      @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
   expiresAt     DateTime?
-  maxUsageCount Int             @default(1)
-  usageCount    Int             @default(0)
-  type          HashedLinkType  @default(PRIVATE_LINK)
+  maxUsageCount Int            @default(1)
+  usageCount    Int            @default(0)
+  type          HashedLinkType @default(PRIVATE_LINK)
 
   @@index([eventTypeId])
 }
