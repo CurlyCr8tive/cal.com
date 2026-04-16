@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ZRequestRescheduleAsAttendeeInputSchema = z.object({
-  bookingId: z.string(),
+  bookingId: z.number(),
   oneTimePassword: z.string(),
   proposedStartTime: z.date().optional(),
   proposedEndTime: z.date().optional(),

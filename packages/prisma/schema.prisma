@@ -180,6 +180,7 @@ model EventType {
   team                               Team?                  @relation(fields: [teamId], references: [id], onDelete: Cascade)
   teamId                             Int?
   hashedLink                         HashedLink[]
+  bookingRequests                    BookingRequest[]
   bookings                           Booking[]
   availability                       Availability[]
   webhooks                           Webhook[]
@@ -430,6 +431,7 @@ model User {
   credentials         Credential[]
   teams               Membership[]
   bookings            Booking[]
+  bookingRequests     BookingRequest[]  @relation("bookingRequestHost")
   schedules           Schedule[]
   defaultScheduleId   Int?
   selectedCalendars   SelectedCalendar[]
@@ -921,7 +923,8 @@ model Booking {
   ratingFeedback               String?
   noShowHost                   Boolean?                          @default(false)
   scheduledTriggers            WebhookScheduledTriggers[]
-  oneTimePassword              String?                           @unique @default(uuid())
+  oneTimePassword              String?
+  rescheduleRequests           RescheduleRequest[]                           @unique @default(uuid())
   /// @zod.import(["import { emailSchema } from '../../zod-utils'"]).custom.use(emailSchema)
   cancelledBy                  String?
   /// @zod.import(["import { emailSchema } from '../../zod-utils'"]).custom.use(emailSchema)
@@ -1245,15 +1248,21 @@ model RateLimit {
 }
 
 model HashedLink {
-  id            Int       @id @default(autoincrement())
-  link          String    @unique
+  id            Int             @id @default(autoincrement())
+  link          String          @unique
   eventTypeId   Int
-  eventType     EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  eventType     EventType       @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
   expiresAt     DateTime?
-  maxUsageCount Int       @default(1)
-  usageCount    Int       @default(0)
+  maxUsageCount Int             @default(1)
+  usageCount    Int             @default(0)
+  type          HashedLinkType  @default(PRIVATE_LINK)
 
   @@index([eventTypeId])
+}
+
+enum HashedLinkType {
+  PRIVATE_LINK
+  BOOKING_REQUEST
 }
 
 model Account {
@@ -3338,4 +3347,68 @@ model RoutingTrace {
 
   assignmentReasonId Int?              @unique
   assignmentReason   AssignmentReason? @relation(fields: [assignmentReasonId], references: [id], onDelete: Cascade)
+}
+
+
+// ─── Host-Initiated Booking Requests ────────────────────────────────────────
+
+model BookingRequest {
+  id               String               @id @default(cuid())
+  eventTypeId      Int
+  eventType        EventType            @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  hostId           Int
+  host             User                 @relation("bookingRequestHost", fields: [hostId], references: [id], onDelete: Cascade)
+  guestEmail       String
+  guestName        String
+  notes            String?
+  startTime        DateTime
+  endTime          DateTime
+  status           BookingRequestStatus @default(PENDING)
+  hashedLinkToken  String               @unique
+  expiresAt        DateTime
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+
+  @@index([eventTypeId])
+  @@index([hostId])
+  @@index([guestEmail])
+}
+
+// ─── Mutual Rescheduling ─────────────────────────────────────────────────────
+
+model RescheduleRequest {
+  id                       String                   @id @default(cuid())
+  bookingId                Int
+  booking                  Booking                  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  initiator                RescheduleInitiator
+  proposedStartTime        DateTime?
+  proposedEndTime          DateTime?
+  reason                   String?
+  status                   RescheduleRequestStatus  @default(PENDING)
+  counterProposalStartTime DateTime?
+  counterProposalEndTime   DateTime?
+  respondedAt              DateTime?
+  createdAt                DateTime                 @default(now())
+  updatedAt                DateTime                 @updatedAt
+
+  @@index([bookingId])
+}
+
+enum BookingRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
+}
+
+enum RescheduleRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum RescheduleInitiator {
+  ATTENDEE
+  HOST
 }

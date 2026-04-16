@@ -11,7 +11,7 @@ import { showToast } from "@calcom/ui/components/toast";
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  bookingId: string;
+  bookingId: number;
   oneTimePassword: string;
 };
 

@@ -1186,7 +1186,7 @@ export default function Success(props: PageProps) {
       <RescheduleRequestModal
         isOpen={isRescheduleModalOpen}
         onClose={() => setIsRescheduleModalOpen(false)}
-        bookingId={String(bookingInfo?.id ?? "")}
+        bookingId={bookingInfo?.id ?? 0}
         oneTimePassword={searchParams?.get("token") ?? ""}
       />
       <Toaster position="bottom-right" />
