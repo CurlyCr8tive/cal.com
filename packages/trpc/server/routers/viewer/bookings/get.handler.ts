@@ -65,13 +65,39 @@ export const getHandler = async ({ ctx, input }: GetOptions) => {
     sort: input.sort,
   });
 
+  // Fetch pending reschedule requests for all returned bookings in a single query
+  const bookingIds = bookings.map((b) => b.id);
+  const pendingRescheduleRequests =
+    bookingIds.length > 0
+      ? await prisma.rescheduleRequest.findMany({
+          where: { bookingId: { in: bookingIds }, status: "PENDING" },
+          select: {
+            id: true,
+            bookingId: true,
+            reason: true,
+            proposedStartTime: true,
+            proposedEndTime: true,
+            initiator: true,
+          },
+        })
+      : [];
+
+  const rescheduleRequestsByBookingId = new Map(
+    pendingRescheduleRequests.map((r) => [r.bookingId, r])
+  );
+
+  const enrichedBookings = bookings.map((booking) => ({
+    ...booking,
+    pendingRescheduleRequest: rescheduleRequestsByBookingId.get(booking.id) ?? null,
+  }));
+
   // Generate next cursor for infinite query support
   const nextOffset = skip + take;
   const hasMore = nextOffset < totalCount;
   const nextCursor = hasMore ? nextOffset.toString() : undefined;
 
   return {
-    bookings,
+    bookings: enrichedBookings,
     recurringInfo,
     totalCount,
     nextCursor,

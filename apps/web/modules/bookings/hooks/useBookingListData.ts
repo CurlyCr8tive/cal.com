@@ -79,12 +79,28 @@ export function useBookingListData({
     };
 
     return (
-      data?.bookings.filter(filterBookings).map((booking) => ({
-        type: "data" as const,
-        booking,
-        recurringInfo: booking.recurringEventId ? recurringInfoMap.get(booking.recurringEventId) : undefined,
-        isToday: false,
-      })) || []
+      data?.bookings.filter(filterBookings).map((booking) => {
+        const raw = booking.pendingRescheduleRequest;
+        return {
+          type: "data" as const,
+          booking,
+          recurringInfo: booking.recurringEventId
+            ? recurringInfoMap.get(booking.recurringEventId)
+            : undefined,
+          isToday: false,
+          pendingRescheduleRequest:
+            raw != null
+              ? {
+                  id: raw.id,
+                  reason: raw.reason,
+                  proposedStartTime: raw.proposedStartTime,
+                  proposedEndTime: raw.proposedEndTime,
+                  // guestName comes from the first attendee on the booking
+                  guestName: booking.attendees[0]?.name ?? "",
+                }
+              : undefined,
+        };
+      }) || []
     );
   }, [data?.bookings, recurringInfoMap, status, userTimeZone]);
 
@@ -97,12 +113,27 @@ export function useBookingListData({
         (booking: BookingOutput) =>
           dayjs(booking.startTime).tz(userTimeZone).format("YYYY-MM-DD") === todayDateString
       )
-      .map((booking) => ({
-        type: "data" as const,
-        booking,
-        recurringInfo: booking.recurringEventId ? recurringInfoMap.get(booking.recurringEventId) : undefined,
-        isToday: true,
-      }));
+      .map((booking) => {
+        const raw = booking.pendingRescheduleRequest;
+        return {
+          type: "data" as const,
+          booking,
+          recurringInfo: booking.recurringEventId
+            ? recurringInfoMap.get(booking.recurringEventId)
+            : undefined,
+          isToday: true,
+          pendingRescheduleRequest:
+            raw != null
+              ? {
+                  id: raw.id,
+                  reason: raw.reason,
+                  proposedStartTime: raw.proposedStartTime,
+                  proposedEndTime: raw.proposedEndTime,
+                  guestName: booking.attendees[0]?.name ?? "",
+                }
+              : undefined,
+        };
+      });
   }, [data?.bookings, recurringInfoMap, userTimeZone]);
 
   // Combine data with section separators for "upcoming" tab

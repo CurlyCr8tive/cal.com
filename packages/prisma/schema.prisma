@@ -285,6 +285,7 @@ model EventType {
   restrictionScheduleId Int?
   restrictionSchedule   Schedule?   @relation("restrictionSchedule", fields: [restrictionScheduleId], references: [id])
   hostGroups            HostGroup[]
+  bookingRequests       BookingRequest[]
 
   bookingRequiresAuthentication Boolean                        @default(false)
   rrHostSubsetEnabled           Boolean                        @default(false)
@@ -520,6 +521,7 @@ model User {
   agents                         Agent[]
   oAuthClients                   OAuthClient[]
   holidaySettings                UserHolidaySettings?
+  bookingRequests                BookingRequest[]      @relation("HostBookingRequests")
 
   autoOptInFeatures Boolean @default(false)
 
@@ -937,6 +939,7 @@ model Booking {
   report                       BookingReport?
   wrongAssignmentReports       WrongAssignmentReport[]
   routingTrace                 RoutingTrace?
+  rescheduleRequests           RescheduleRequest[]
 
   // @@partial_index([reassignById])
 
@@ -1245,13 +1248,14 @@ model RateLimit {
 }
 
 model HashedLink {
-  id            Int       @id @default(autoincrement())
-  link          String    @unique
+  id            Int             @id @default(autoincrement())
+  link          String          @unique
   eventTypeId   Int
-  eventType     EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  eventType     EventType       @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
   expiresAt     DateTime?
-  maxUsageCount Int       @default(1)
-  usageCount    Int       @default(0)
+  maxUsageCount Int             @default(1)
+  usageCount    Int             @default(0)
+  type          HashedLinkType  @default(PRIVATE_LINK)
 
   @@index([eventTypeId])
 }
@@ -3338,4 +3342,70 @@ model RoutingTrace {
 
   assignmentReasonId Int?              @unique
   assignmentReason   AssignmentReason? @relation(fields: [assignmentReasonId], references: [id], onDelete: Cascade)
+}
+
+// ─── Booking Request + Mutual Rescheduling ────────────────────────────────────
+
+enum HashedLinkType {
+  PRIVATE_LINK
+  BOOKING_REQUEST
+}
+
+enum BookingRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
+}
+
+enum RescheduleRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum RescheduleInitiator {
+  ATTENDEE
+  HOST
+}
+
+model BookingRequest {
+  id              String               @id @default(cuid())
+  eventTypeId     Int
+  eventType       EventType            @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  hostId          Int
+  host            User                 @relation("HostBookingRequests", fields: [hostId], references: [id], onDelete: Cascade)
+  guestEmail      String
+  guestName       String
+  notes           String?
+  startTime       DateTime
+  endTime         DateTime
+  status          BookingRequestStatus @default(PENDING)
+  hashedLinkToken String               @unique
+  expiresAt       DateTime
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([eventTypeId])
+  @@index([hostId])
+  @@index([guestEmail])
+}
+
+model RescheduleRequest {
+  id                       String                  @id @default(cuid())
+  bookingId                Int
+  booking                  Booking                 @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  initiator                RescheduleInitiator
+  proposedStartTime        DateTime?
+  proposedEndTime          DateTime?
+  reason                   String?
+  status                   RescheduleRequestStatus @default(PENDING)
+  counterProposalStartTime DateTime?
+  counterProposalEndTime   DateTime?
+  respondedAt              DateTime?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+
+  @@index([bookingId])
 }
