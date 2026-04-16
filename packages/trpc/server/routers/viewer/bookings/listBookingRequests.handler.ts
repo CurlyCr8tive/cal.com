@@ -1,3 +1,6 @@
+import { prisma } from "@calcom/prisma";
+import { TRPCError } from "@trpc/server";
+
 import type { TRPCContext } from "../../../createContext";
 import type { TListBookingRequestsInputSchema } from "./listBookingRequests.schema";
 
@@ -7,15 +10,28 @@ type ListBookingRequestsOptions = {
 };
 
 export const listBookingRequestsHandler = async ({ ctx, input }: ListBookingRequestsOptions) => {
-  // TODO: Replace this stub with the full implementation from ROB_FINAL_COMPLETE_GUIDE.md
-  // Steps:
-  // 1. Query prisma.bookingRequest.findMany where hostId = ctx.user.id
-  // 2. Optionally filter by input.status
-  // 3. Include eventType relation
-  // 4. Order by createdAt desc
-  // 5. Return { bookingRequests }
+  const bookingRequests = await prisma.bookingRequest.findMany({
+    where: {
+      hostId: ctx.user.id,
+      ...(input.status ? { status: input.status } : {}),
+    },
+    select: {
+      id: true,
+      guestEmail: true,
+      guestName: true,
+      notes: true,
+      startTime: true,
+      endTime: true,
+      status: true,
+      hashedLinkToken: true,
+      expiresAt: true,
+      createdAt: true,
+      eventType: {
+        select: { id: true, title: true, slug: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-  return {
-    bookingRequests: [],
-  };
+  return { bookingRequests };
 };
