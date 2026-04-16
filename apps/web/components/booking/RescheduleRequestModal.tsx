@@ -2,42 +2,49 @@
 
 import { useState } from "react";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
+import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
-import { Dialog, DialogContent } from "@calcom/ui/components/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
 import { TextArea } from "@calcom/ui/components/form";
 import { showToast } from "@calcom/ui/components/toast";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  bookingUid: string;
+  bookingId: number;
   oneTimePassword: string;
 };
 
-export default function RescheduleRequestModal({ isOpen, onClose, bookingUid, oneTimePassword }: Props) {
+export default function RescheduleRequestModal({ isOpen, onClose, bookingId, oneTimePassword }: Props) {
   const { t } = useLocale();
   const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
 
-  const onSubmit = async () => {
+  const mutation = trpc.viewer.bookings.requestRescheduleAsAttendee.useMutation({
+    onSuccess: () => {
+      showToast(t("reschedule_request_sent"), "success");
+      setReason("");
+      onClose();
+    },
+    onError: (err) => {
+      showToast(err.message || t("reschedule_request_error"), "error");
+    },
+  });
+
+  const onSubmit = () => {
     if (!oneTimePassword) {
       showToast(t("reschedule_request_token_missing"), "error");
       return;
     }
-    try {
-      setLoading(true);
-      // TODO: wire to trpc.viewer.bookings.requestRescheduleAsAttendee once Person 1 registers the route
-      showToast(t("reschedule_request_sent"), "success");
-      onClose();
-    } catch (e) {
-      showToast(t("reschedule_request_error"), "error");
-    } finally {
-      setLoading(false);
-    }
+    mutation.mutate({ bookingId, oneTimePassword, reason: reason || undefined });
+  };
+
+  const handleClose = () => {
+    setReason("");
+    onClose();
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent title={t("request_reschedule")}>
         <div className="mt-4">
           <p className="text-subtle mb-4 text-sm">{t("request_reschedule_description")}</p>
@@ -48,14 +55,14 @@ export default function RescheduleRequestModal({ isOpen, onClose, bookingUid, on
             onChange={(e) => setReason(e.target.value)}
             className="mb-4 w-full"
           />
-          <div className="flex justify-end gap-2">
-            <Button color="secondary" onClick={onClose}>
+          <DialogFooter>
+            <Button color="secondary" onClick={handleClose}>
               {t("cancel")}
             </Button>
-            <Button loading={loading} onClick={onSubmit}>
+            <Button loading={mutation.isPending} onClick={onSubmit}>
               {t("send_request")}
             </Button>
-          </div>
+          </DialogFooter>
         </div>
       </DialogContent>
     </Dialog>
