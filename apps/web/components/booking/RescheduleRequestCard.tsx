@@ -73,6 +73,7 @@ export default function RescheduleRequestCard({
 
       <div className="flex gap-2">
         <Button
+          data-testid={`reschedule-request-accept-${rescheduleRequestId}`}
           color="primary"
           loading={mutation.isPending && mutation.variables?.response === "ACCEPTED"}
           disabled={mutation.isPending}
@@ -80,6 +81,7 @@ export default function RescheduleRequestCard({
           {t("accept")}
         </Button>
         <Button
+          data-testid={`reschedule-request-decline-${rescheduleRequestId}`}
           color="secondary"
           loading={mutation.isPending && mutation.variables?.response === "DECLINED"}
           disabled={mutation.isPending}
