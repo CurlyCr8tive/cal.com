@@ -1,11 +1,13 @@
 import { prisma } from "@calcom/prisma";
-import { TRPCError } from "@trpc/server";
 
-import type { TRPCContext } from "../../../createContext";
+import type { TrpcSessionUser } from "@calcom/trpc/server/types";
+
 import type { TListBookingRequestsInputSchema } from "./listBookingRequests.schema";
 
 type ListBookingRequestsOptions = {
-  ctx: TRPCContext & { user: NonNullable<TRPCContext["user"]> };
+  ctx: {
+    user: NonNullable<TrpcSessionUser>;
+  };
   input: TListBookingRequestsInputSchema;
 };
 

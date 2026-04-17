@@ -5,7 +5,9 @@ import { createBookingRequestHandler } from "./createBookingRequest.handler";
 vi.mock("@calcom/prisma", () => ({
   prisma: {
     eventType: { findFirst: vi.fn() },
-    bookingRequest: { findFirst: vi.fn(), create: vi.fn() },
+    hashedLink: { create: vi.fn(), delete: vi.fn() },
+    bookingRequest: { findFirst: vi.fn(), create: vi.fn(), delete: vi.fn() },
+    $transaction: vi.fn(),
   },
 }));
 
@@ -26,6 +28,7 @@ vi.mock("@calcom/lib/logger", () => ({
 vi.mock("@calcom/lib/constants", () => ({ WEBAPP_URL: "http://localhost:3000" }));
 vi.mock("@calcom/lib/safeStringify", () => ({ safeStringify: vi.fn((x) => JSON.stringify(x)) }));
 
+import { sendBookingRequestInviteEmail } from "@calcom/emails/email-manager";
 import { prisma } from "@calcom/prisma";
 
 const mockUser = { id: 1, name: "Host User", email: "host@example.com", locale: "en" };
@@ -56,6 +59,7 @@ describe("createBookingRequestHandler", () => {
     it("proceeds when host owns the event type", async () => {
       vi.mocked(prisma.eventType.findFirst).mockResolvedValue({ id: 10, title: "30 Min Call" });
       vi.mocked(prisma.bookingRequest.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.hashedLink.create).mockResolvedValue({ id: 1, link: "mock-link" });
       vi.mocked(prisma.bookingRequest.create).mockResolvedValue({ id: 1 });
 
       await expect(
@@ -79,12 +83,39 @@ describe("createBookingRequestHandler", () => {
     it("creates a booking request and returns it", async () => {
       vi.mocked(prisma.eventType.findFirst).mockResolvedValue({ id: 10, title: "30 Min Call" });
       vi.mocked(prisma.bookingRequest.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.hashedLink.create).mockResolvedValue({ id: 1, link: "mock-link" });
       vi.mocked(prisma.bookingRequest.create).mockResolvedValue({ id: 1, status: "PENDING" });
 
       const result = await createBookingRequestHandler({ ctx: { user: mockUser }, input: mockInput });
 
       expect(result.bookingRequest).toBeDefined();
       expect(prisma.bookingRequest.create).toHaveBeenCalledOnce();
+    });
+
+    it("rolls back the booking request when the invite email fails", async () => {
+      vi.mocked(prisma.eventType.findFirst).mockResolvedValue({ id: 10, title: "30 Min Call" });
+      vi.mocked(prisma.bookingRequest.findFirst).mockResolvedValue(null);
+      vi.mocked(prisma.hashedLink.create).mockResolvedValue({ id: 1, link: "mock-link" });
+      vi.mocked(prisma.bookingRequest.create).mockResolvedValue({
+        id: "booking-request-id",
+        status: "PENDING",
+      });
+      vi.mocked(sendBookingRequestInviteEmail).mockRejectedValue(new Error("SMTP unavailable"));
+
+      await expect(
+        createBookingRequestHandler({ ctx: { user: mockUser }, input: mockInput })
+      ).rejects.toMatchObject({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Unable to send booking request email",
+      });
+
+      expect(prisma.bookingRequest.delete).toHaveBeenCalledWith({
+        where: { id: "booking-request-id" },
+      });
+      expect(prisma.hashedLink.delete).toHaveBeenCalledWith({
+        where: { link: expect.any(String) },
+      });
+      expect(prisma.$transaction).toHaveBeenCalledOnce();
     });
   });
 });

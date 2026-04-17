@@ -1,14 +1,13 @@
-import { decodeHTML } from "entities";
-import { z } from "zod";
-
+import process from "node:process";
 import dayjs from "@calcom/dayjs";
 import { FeaturesRepository } from "@calcom/features/flags/features.repository";
 import isSmsCalEmail from "@calcom/lib/isSmsCalEmail";
-import { serverConfig } from "@calcom/lib/serverConfig";
 import { getServerErrorFromUnknown } from "@calcom/lib/server/getServerErrorFromUnknown";
+import { serverConfig } from "@calcom/lib/serverConfig";
 import { setTestEmail } from "@calcom/lib/testEmails";
 import { prisma } from "@calcom/prisma";
-
+import { decodeHTML } from "entities";
+import { z } from "zod";
 import { sanitizeDisplayName } from "../lib/sanitizeDisplayName";
 
 export default class BaseEmail {
@@ -29,6 +28,11 @@ export default class BaseEmail {
   protected async getNodeMailerPayload(): Promise<Record<string, unknown>> {
     return {};
   }
+
+  protected shouldRethrowSendFailure(): boolean {
+    return false;
+  }
+
   public async sendEmail() {
     const featuresRepository = new FeaturesRepository(prisma);
     const emailsDisabled = await featuresRepository.checkIfFeatureIsEnabledGlobally("emails");
@@ -85,14 +89,18 @@ export default class BaseEmail {
           }
         }
       )
-    ).catch((e) =>
+    ).catch((e) => {
       console.error(
         "sendEmail",
         `from: ${"from" in payloadWithUnEscapedSubject ? payloadWithUnEscapedSubject.from : ""}`,
         `subject: ${"subject" in payloadWithUnEscapedSubject ? payloadWithUnEscapedSubject.subject : ""}`,
         e
-      )
-    );
+      );
+
+      if (this.shouldRethrowSendFailure()) {
+        throw e;
+      }
+    });
     return new Promise((resolve) => resolve("send mail async"));
   }
   protected getMailerOptions() {

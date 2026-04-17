@@ -1,8 +1,6 @@
 "use client";
 
 import dayjs from "@calcom/dayjs";
-import { useDataTable } from "~/data-table/hooks/useDataTable";
-import { useDisplayedFilterCount } from "~/data-table/hooks/useDisplayedFilterCount";
 import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import useMeQuery from "@calcom/trpc/react/hooks/useMeQuery";
@@ -11,6 +9,7 @@ import { Badge } from "@calcom/ui/components/badge";
 import { Button } from "@calcom/ui/components/button";
 import { ToggleGroup } from "@calcom/ui/components/form";
 import { WipeMyCalActionButton } from "@calcom/web/components/apps/wipemycalother/wipeMyCalActionButton";
+import RequestBookingModal from "@calcom/web/components/booking/RequestBookingModal";
 import { getCoreRowModel, getSortedRowModel, useReactTable } from "@tanstack/react-table";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -22,6 +21,8 @@ import { useFacetedUniqueValues } from "~/bookings/hooks/useFacetedUniqueValues"
 import { useListAutoSelector } from "~/bookings/hooks/useListAutoSelector";
 import { useSwitchToCorrectStatusTab } from "~/bookings/hooks/useSwitchToCorrectStatusTab";
 import { DataTableFilters, DataTableSegment } from "~/data-table/components";
+import { useDataTable } from "~/data-table/hooks/useDataTable";
+import { useDisplayedFilterCount } from "~/data-table/hooks/useDisplayedFilterCount";
 import {
   BookingDetailsSheetStoreProvider,
   useBookingDetailsSheetStore,
@@ -94,6 +95,10 @@ function BookingListInner({
   const setSelectedBookingUid = useBookingDetailsSheetStore((state) => state.setSelectedBookingUid);
   const router = useRouter();
   const [showFilters, setShowFilters] = useState(true);
+  const [isRequestBookingModalOpen, setIsRequestBookingModalOpen] = useState(false);
+  const eventTypesQuery = trpc.viewer.eventTypes.getByViewer.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  });
 
   // Handle auto-selection for list view
   useListAutoSelector(bookings);
@@ -129,6 +134,18 @@ function BookingListInner({
 
   const displayedFilterCount = useDisplayedFilterCount();
   const { currentTab, tabOptions } = useBookingStatusTab();
+  const requestBookingEventTypeOptions = useMemo(() => {
+    return (
+      eventTypesQuery.data?.eventTypeGroups.flatMap((group) => {
+        if (group.metadata.readOnly) return [];
+
+        return group.eventTypes.map((eventType) => ({
+          id: eventType.id,
+          label: group.profile.name ? `${eventType.title} (${group.profile.name})` : eventType.title,
+        }));
+      }) ?? []
+    );
+  }, [eventTypesQuery.data?.eventTypeGroups]);
 
   useEffect(() => {
     if (displayedFilterCount === 0) {
@@ -184,6 +201,15 @@ function BookingListInner({
           displayedFilterCount={displayedFilterCount}
           setShowFilters={setShowFilters}
         />
+        <Button
+          color="secondary"
+          StartIcon="send"
+          size="sm"
+          disabled={requestBookingEventTypeOptions.length === 0}
+          loading={eventTypesQuery.isPending}
+          onClick={() => setIsRequestBookingModalOpen(true)}>
+          {t("send_booking_request")}
+        </Button>
 
         {/* Desktop: auto-pushed to right via flex-grow spacer, Mobile: continue on second row */}
         <div className="hidden grow md:block" />
@@ -227,6 +253,11 @@ function BookingListInner({
           bookingAuditEnabled={bookingAuditEnabled}
         />
       )}
+      <RequestBookingModal
+        isOpen={isRequestBookingModalOpen}
+        onClose={() => setIsRequestBookingModalOpen(false)}
+        eventTypeOptions={requestBookingEventTypeOptions}
+      />
     </>
   );
 }

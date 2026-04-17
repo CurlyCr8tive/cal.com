@@ -1,6 +1,5 @@
-import { EMAIL_FROM_NAME } from "@calcom/lib/constants";
 import { getTranslation } from "@calcom/i18n/server";
-
+import { EMAIL_FROM_NAME } from "@calcom/lib/constants";
 import renderEmail from "../src/renderEmail";
 import BaseEmail from "./_base-email";
 
@@ -21,6 +20,10 @@ export default class BookingRequestInviteEmail extends BaseEmail {
     super();
     this.name = "SEND_BOOKING_REQUEST_INVITE";
     this.props = props;
+  }
+
+  protected shouldRethrowSendFailure(): boolean {
+    return true;
   }
 
   protected async getNodeMailerPayload(): Promise<Record<string, unknown>> {

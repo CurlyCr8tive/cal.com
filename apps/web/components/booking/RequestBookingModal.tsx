@@ -4,17 +4,19 @@ import { useLocale } from "@calcom/lib/hooks/useLocale";
 import { trpc } from "@calcom/trpc/react";
 import { Button } from "@calcom/ui/components/button";
 import { Dialog, DialogContent, DialogFooter } from "@calcom/ui/components/dialog";
-import { TextField, TextArea } from "@calcom/ui/components/form";
+import { TextArea, TextField } from "@calcom/ui/components/form";
 import { showToast } from "@calcom/ui/components/toast";
 import { useForm } from "react-hook-form";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  eventTypeId: number;
+  eventTypeId?: number;
+  eventTypeOptions?: { id: number; label: string }[];
 };
 
 type FormValues = {
+  eventTypeId?: string;
   email: string;
   name: string;
   startTime: string;
@@ -22,9 +24,26 @@ type FormValues = {
   notes: string;
 };
 
-export default function RequestBookingModal({ isOpen, onClose, eventTypeId }: Props) {
+export default function RequestBookingModal({ isOpen, onClose, eventTypeId, eventTypeOptions }: Props) {
   const { t } = useLocale();
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormValues>({
+    defaultValues: {
+      eventTypeId:
+        eventTypeId !== undefined
+          ? String(eventTypeId)
+          : eventTypeOptions && eventTypeOptions.length === 1
+            ? String(eventTypeOptions[0].id)
+            : undefined,
+    },
+  });
+
+  const selectedEventTypeId =
+    eventTypeId ?? (eventTypeOptions && eventTypeOptions.length === 1 ? eventTypeOptions[0].id : undefined);
 
   const mutation = trpc.viewer.bookings.createBookingRequest.useMutation({
     onSuccess: () => {
@@ -38,8 +57,15 @@ export default function RequestBookingModal({ isOpen, onClose, eventTypeId }: Pr
   });
 
   const onSubmit = (data: FormValues) => {
+    const resolvedEventTypeId = selectedEventTypeId ?? Number(data.eventTypeId);
+
+    if (!resolvedEventTypeId) {
+      showToast(t("please_select_event_type_first"), "error");
+      return;
+    }
+
     mutation.mutate({
-      eventTypeId,
+      eventTypeId: resolvedEventTypeId,
       email: data.email,
       name: data.name,
       startTime: new Date(data.startTime),
@@ -57,6 +83,27 @@ export default function RequestBookingModal({ isOpen, onClose, eventTypeId }: Pr
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent title={t("send_booking_request")}>
         <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4">
+          {eventTypeId === undefined && eventTypeOptions && eventTypeOptions.length > 0 && (
+            <div>
+              <label className="text-default mb-1 block text-sm font-medium" htmlFor="eventTypeId">
+                {t("event_type")}
+              </label>
+              <select
+                id="eventTypeId"
+                className="border-default bg-default text-default focus:ring-brand-default block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2"
+                {...register("eventTypeId", { required: true })}>
+                <option value="">{t("event_type")}</option>
+                {eventTypeOptions.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {errors.eventTypeId && (
+                <p className="mt-1 text-sm text-error">{t("please_select_event_type_first")}</p>
+              )}
+            </div>
+          )}
           <TextField
             label={t("email")}
             type="email"
@@ -87,7 +134,7 @@ export default function RequestBookingModal({ isOpen, onClose, eventTypeId }: Pr
               className="w-full"
             />
           </div>
-          <DialogFooter>
+          <DialogFooter noSticky>
             <Button color="secondary" type="button" onClick={handleClose}>
               {t("cancel")}
             </Button>

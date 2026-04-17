@@ -1,15 +1,15 @@
-import { v4 as uuidv4 } from "uuid";
-
 import { sendBookingRequestInviteEmail } from "@calcom/emails/email-manager";
 import { WEBAPP_URL } from "@calcom/lib/constants";
 import { prisma } from "@calcom/prisma";
+import type { TrpcSessionUser } from "@calcom/trpc/server/types";
 import { TRPCError } from "@trpc/server";
-
-import type { TRPCContext } from "../../../createContext";
+import { v4 as uuidv4 } from "uuid";
 import type { TCreateBookingRequestInputSchema } from "./createBookingRequest.schema";
 
 type CreateBookingRequestOptions = {
-  ctx: TRPCContext & { user: NonNullable<TRPCContext["user"]> };
+  ctx: {
+    user: NonNullable<TrpcSessionUser>;
+  };
   input: TCreateBookingRequestInputSchema;
 };
 
@@ -27,6 +27,7 @@ export const createBookingRequestHandler = async ({ ctx, input }: CreateBookingR
   // Prevent duplicate pending requests for the same guest
   const existing = await prisma.bookingRequest.findFirst({
     where: { eventTypeId: input.eventTypeId, guestEmail: input.email, status: "PENDING" },
+    select: { id: true },
   });
 
   if (existing) {
@@ -65,15 +66,28 @@ export const createBookingRequestHandler = async ({ ctx, input }: CreateBookingR
     },
   });
 
-  await sendBookingRequestInviteEmail({
-    to: input.email,
-    guestName: input.name,
-    hostName: ctx.user.name ?? ctx.user.email,
-    eventTypeName: eventType.title,
-    bookingLink: `${WEBAPP_URL}/booking-request/${token}`,
-    expiresAt,
-    language: ctx.user.locale ?? "en",
-  });
+  try {
+    await sendBookingRequestInviteEmail({
+      to: input.email,
+      guestName: input.name,
+      hostName: ctx.user.name ?? ctx.user.email,
+      eventTypeName: eventType.title,
+      bookingLink: `${WEBAPP_URL}/booking-request/${token}`,
+      expiresAt,
+      language: ctx.user.locale ?? "en",
+    });
+  } catch (error) {
+    await prisma.$transaction([
+      prisma.bookingRequest.delete({ where: { id: bookingRequest.id } }),
+      prisma.hashedLink.delete({ where: { link: token } }),
+    ]);
+
+    throw new TRPCError({
+      code: "INTERNAL_SERVER_ERROR",
+      message: "Unable to send booking request email",
+      cause: error,
+    });
+  }
 
   return { bookingRequest };
 };
