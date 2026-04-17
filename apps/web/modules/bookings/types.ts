@@ -1,5 +1,6 @@
 import type { DataTableRow } from "@calcom/features/data-table/lib/separator";
 import type { RouterOutputs } from "@calcom/trpc/react";
+import type { PendingRescheduleRequest } from "@calcom/web/components/booking/types";
 import type { BookerEventQuery } from "@calcom/features/bookings/types";
 import type { useScheduleForEventReturnType } from "@calcom/web/modules/schedules/hooks/useEvent";
 import type { ToggledConnectedCalendars, CustomClassNames } from "@calcom/features/bookings/Booker/types";
@@ -31,6 +32,7 @@ export type BookingRowData = {
   booking: BookingOutput;
   isToday: boolean;
   recurringInfo?: RecurringInfo;
+  pendingRescheduleRequest?: PendingRescheduleRequest;
 };
 
 export type RowData = DataTableRow<BookingRowData>;

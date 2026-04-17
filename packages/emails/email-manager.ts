@@ -44,6 +44,18 @@ import OrganizerRequestReminderEmail from "./templates/organizer-request-reminde
 import OrganizerRequestedToRescheduleEmail from "./templates/organizer-requested-to-reschedule-email";
 import OrganizerRescheduledEmail from "./templates/organizer-rescheduled-email";
 import OrganizerScheduledEmail from "./templates/organizer-scheduled-email";
+import BookingRequestInviteEmail from "./templates/booking-request-invite-email";
+import type { BookingRequestInviteEmailProps } from "./templates/booking-request-invite-email";
+import RescheduleRequestReceivedEmail from "./templates/reschedule-request-received-email";
+import type { RescheduleRequestReceivedEmailProps } from "./templates/reschedule-request-received-email";
+import RescheduleRequestAcceptedEmail from "./templates/reschedule-request-accepted-email";
+import type { RescheduleRequestAcceptedEmailProps } from "./templates/reschedule-request-accepted-email";
+import RescheduleRequestDeclinedEmail from "./templates/reschedule-request-declined-email";
+import type { RescheduleRequestDeclinedEmailProps } from "./templates/reschedule-request-declined-email";
+import BookingRequestExpiredEmail from "./templates/booking-request-expired-email";
+import type { BookingRequestExpiredEmailProps } from "./templates/booking-request-expired-email";
+import RescheduleCounterProposalEmail from "./templates/reschedule-counter-proposal-email";
+import type { RescheduleCounterProposalEmailProps } from "./templates/reschedule-counter-proposal-email";
 
 type EventTypeMetadata = z.infer<typeof EventTypeMetaDataSchema>;
 
@@ -818,3 +830,21 @@ export const sendAddAttendeeEmailsAndSMS = async (args: {
 
   await Promise.all(emailsAndSMSToSend);
 };
+
+export const sendBookingRequestInviteEmail = (props: BookingRequestInviteEmailProps) =>
+  sendEmail(() => new BookingRequestInviteEmail(props));
+
+export const sendRescheduleRequestReceivedEmail = (props: RescheduleRequestReceivedEmailProps) =>
+  sendEmail(() => new RescheduleRequestReceivedEmail(props));
+
+export const sendRescheduleRequestAcceptedEmail = (props: RescheduleRequestAcceptedEmailProps) =>
+  sendEmail(() => new RescheduleRequestAcceptedEmail(props));
+
+export const sendRescheduleRequestDeclinedEmail = (props: RescheduleRequestDeclinedEmailProps) =>
+  sendEmail(() => new RescheduleRequestDeclinedEmail(props));
+
+export const sendBookingRequestExpiredEmail = (props: BookingRequestExpiredEmailProps) =>
+  sendEmail(() => new BookingRequestExpiredEmail(props));
+
+export const sendRescheduleCounterProposalEmail = (props: RescheduleCounterProposalEmailProps) =>
+  sendEmail(() => new RescheduleCounterProposalEmail(props));

@@ -21,6 +21,14 @@ import { ZReportBookingInputSchema } from "./reportBooking.schema";
 import { ZReportWrongAssignmentInputSchema } from "./reportWrongAssignment.schema";
 import { ZRequestRescheduleInputSchema } from "./requestReschedule.schema";
 import { ZUpdateWrongAssignmentReportStatusInputSchema } from "./updateWrongAssignmentReportStatus.schema";
+import { ZCreateBookingRequestInputSchema } from "./createBookingRequest.schema";
+import { ZCancelBookingRequestInputSchema } from "./cancelBookingRequest.schema";
+import { ZListBookingRequestsInputSchema } from "./listBookingRequests.schema";
+import { ZRequestRescheduleAsAttendeeInputSchema } from "./requestRescheduleAsAttendee.schema";
+import { ZRespondToRescheduleRequestInputSchema } from "./respondToRescheduleRequest.schema";
+import { ZGetBookingRequestByTokenInputSchema } from "./getBookingRequestByToken.schema";
+import { ZAcceptBookingRequestInputSchema } from "./acceptBookingRequest.schema";
+import { ZDeclineBookingRequestInputSchema } from "./declineBookingRequest.schema";
 import { bookingsProcedure } from "./util";
 export const bookingsRouter = router({
   get: authedProcedure.input(ZGetInputSchema).query(async ({ input, ctx }) => {
@@ -189,5 +197,65 @@ export const bookingsRouter = router({
         ctx,
         input,
       });
+    }),
+
+  createBookingRequest: authedProcedure
+    .input(ZCreateBookingRequestInputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { createBookingRequestHandler } = await import("./createBookingRequest.handler");
+      return createBookingRequestHandler({ ctx, input });
+    }),
+
+  cancelBookingRequest: authedProcedure
+    .input(ZCancelBookingRequestInputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { cancelBookingRequestHandler } = await import("./cancelBookingRequest.handler");
+      return cancelBookingRequestHandler({ ctx, input });
+    }),
+
+  listBookingRequests: authedProcedure
+    .input(ZListBookingRequestsInputSchema)
+    .query(async ({ input, ctx }) => {
+      const { listBookingRequestsHandler } = await import("./listBookingRequests.handler");
+      return listBookingRequestsHandler({ ctx, input });
+    }),
+
+  requestRescheduleAsAttendee: publicProcedure
+    .input(ZRequestRescheduleAsAttendeeInputSchema)
+    .mutation(async ({ input }) => {
+      const { requestRescheduleAsAttendeeHandler } = await import(
+        "./requestRescheduleAsAttendee.handler"
+      );
+      return requestRescheduleAsAttendeeHandler({ input });
+    }),
+
+  respondToRescheduleRequest: authedProcedure
+    .input(ZRespondToRescheduleRequestInputSchema)
+    .mutation(async ({ input, ctx }) => {
+      const { respondToRescheduleRequestHandler } = await import(
+        "./respondToRescheduleRequest.handler"
+      );
+      return respondToRescheduleRequestHandler({ ctx, input });
+    }),
+
+  getBookingRequestByToken: publicProcedure
+    .input(ZGetBookingRequestByTokenInputSchema)
+    .query(async ({ input }) => {
+      const { getBookingRequestByTokenHandler } = await import("./getBookingRequestByToken.handler");
+      return getBookingRequestByTokenHandler({ input });
+    }),
+
+  acceptBookingRequest: publicProcedure
+    .input(ZAcceptBookingRequestInputSchema)
+    .mutation(async ({ input }) => {
+      const { acceptBookingRequestHandler } = await import("./acceptBookingRequest.handler");
+      return acceptBookingRequestHandler({ input });
+    }),
+
+  declineBookingRequest: publicProcedure
+    .input(ZDeclineBookingRequestInputSchema)
+    .mutation(async ({ input }) => {
+      const { declineBookingRequestHandler } = await import("./declineBookingRequest.handler");
+      return declineBookingRequestHandler({ input });
     }),
 });

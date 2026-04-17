@@ -45,6 +45,7 @@ import { localStorage } from "@calcom/lib/webstorage";
 import { AssignmentReasonEnum, BookingStatus, SchedulingType } from "@calcom/prisma/enums";
 
 import assignmentReasonBadgeTitleMap from "@calcom/web/lib/booking/assignmentReasonBadgeTitleMap";
+import RescheduleRequestModal from "@calcom/web/components/booking/RescheduleRequestModal";
 import { bookingMetadataSchema } from "@calcom/prisma/zod-utils";
 import { trpc } from "@calcom/trpc/react";
 import { Alert } from "@calcom/ui/components/alert";
@@ -212,6 +213,8 @@ export default function Success(props: PageProps) {
   const [rateValue, setRateValue] = useState<number>(defaultRating);
   const [isFeedbackSubmitted, setIsFeedbackSubmitted] = useState(false);
   const [isRoutingTraceSheetOpen, setIsRoutingTraceSheetOpen] = useState(false);
+  const [isRescheduleRequestModalOpen, setIsRescheduleRequestModalOpen] = useState(false);
+  const oneTimePassword = searchParams?.get("token") ?? "";
 
   const mutation = trpc.viewer.public.submitRating.useMutation({
     onSuccess: async () => {
@@ -921,6 +924,17 @@ export default function Success(props: PageProps) {
                                       {t("cancel")}
                                     </button>
                                   )}
+                                  {oneTimePassword && (
+                                    <>
+                                      <span className="mx-2">{t("or_lowercase")}</span>
+                                      <button
+                                        data-testid="request-reschedule"
+                                        className="text-default underline"
+                                        onClick={() => setIsRescheduleRequestModalOpen(true)}>
+                                        {t("request_reschedule_booking")}
+                                      </button>
+                                    </>
+                                  )}
                                 </>
                               </div>
                             </>
@@ -1165,6 +1179,14 @@ export default function Success(props: PageProps) {
           </div>
         </div>
       </main>
+      {oneTimePassword && (
+        <RescheduleRequestModal
+          isOpen={isRescheduleRequestModalOpen}
+          onClose={() => setIsRescheduleRequestModalOpen(false)}
+          bookingId={bookingInfo?.id ?? 0}
+          oneTimePassword={oneTimePassword}
+        />
+      )}
       <Toaster position="bottom-right" />
     </div>
   );

@@ -127,7 +127,7 @@ export function useBookingListColumns({
             return null;
           }
 
-          const { booking, recurringInfo, isToday } = row;
+          const { booking, recurringInfo, isToday, pendingRescheduleRequest } = row;
           return (
             <BookingListItem
               key={booking.id}
@@ -140,6 +140,7 @@ export function useBookingListColumns({
               }}
               listingStatus={status}
               recurringInfo={recurringInfo}
+              pendingRescheduleRequest={pendingRescheduleRequest}
               {...(bookingsV3Enabled && { onClick: () => handleBookingClick(booking.uid) })}
               {...booking}
             />
